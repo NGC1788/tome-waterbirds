@@ -124,6 +124,23 @@ OMP_NUM_THREADS=4 .venv/bin/python scripts/validate_merge.py \
 - 아직 단일 seed이며, seed 1/2 반복과 기울기에 직접 개입하는 대조 실험은 별도 단계다.
 - 이 스크립트 추가는 기존 학습 코드와 checkpoint를 변경하지 않는다.
 
+세 seed의 병합 probe가 끝나면, 저장된 validation logits만으로 공통 클래스 점수 이동을 진단할 수 있다.
+
+```bash
+git pull --ff-only
+.venv/bin/python scripts/probe_logit_shift.py --runs runs
+```
+
+`margin = waterbird logit - landbird logit`으로 정의한다. `median_delta`는 병합 on minus off이며,
+음수이면 중앙값 기준 육지새 방향으로 이동한 것이다. AUC는 판단 임계값에 무관한 클래스 순위 구분력을 본다.
+`aligned_WGA`는 다른 4개 validation fold에서 추정한 **하나의 공통 median offset**을 나머지 fold에 적용한
+예측들을 합쳐 계산한다. fold는 4개 그룹별로 나누며, offset fitting에는 정답이나 WGA 최적화를 사용하지 않는다.
+전체 정확도·그룹별 변화·배경별 AUC·fold별 offset은 `runs/logit_shift_probe/results.json`에 기록한다.
+
+이는 원인 분석용 대조 실험이다. 보정용 full-token 예측을 요구하며, 이미 checkpoint 선택에 사용한 validation을
+재사용하므로 새로운 방법의 독립적인 성능 검증으로 주장하지 않는다. 일정한 offset으로 회복돼도 정보 보존이나
+기울기 손실의 부재가 증명되지는 않는다. AUC와 그룹별 결과를 함께 읽고 test는 계속 보류한다.
+
 학습과 설정 선택을 마친 뒤 실행한다. 학생은 같은 checkpoint로 병합 on/off 두 가지를 모두 평가한다.
 
 ```bash
