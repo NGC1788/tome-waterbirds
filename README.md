@@ -1,7 +1,13 @@
-# Waterbirds: ToMe 학습 신호 진단, 1차 기준선
+# KD 효율화 실험
 
-현재 상태: 기준선 실행 코드 작성 및 로컬 CPU 테스트 완료. 실제 데이터 학습은 미실행.
-원격 서버의 GPU/드라이버/데이터 경로를 확인한 후 시작한다.
+현재 단계: [CIFAR-100 CE vs Full KD 기준선](experiments/CIFAR100_BASELINE.md).
+공식 ResNet32×4 → ResNet8×4 설정으로 증류의 이득부터 확인한다.
+서버의 기존 `.venv`에서 `bash scripts/run_cifar_baseline.sh 0`으로 준비·학습·최종 보고서를 순차 실행한다.
+이 기준선은 새 방법의 성능이나 novelty를 입증하는 실험이 아니다.
+
+Waterbirds에서는 사용자 제공 결과 기준 학생 3 seeds의 CE/KD/ToMe-KD와
+단일 seed gradient-rescue pilot이 완료됐다. 원시 서버 결과는 이 저장소에 포함하지 않는다.
+이하 내용은 기존 Waterbirds 실행 절차다.
 
 ## 이번 단계
 
