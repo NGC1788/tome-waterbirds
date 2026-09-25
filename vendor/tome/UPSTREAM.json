@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/facebookresearch/ToMe",
+  "revision": "af95e4b1befa172dadccd8c81e223b10090f9579",
+  "files": ["tome/merge.py", "LICENSE"],
+  "changes": "None. Model integration lives separately in models.py.",
+  "license": "CC-BY-NC-4.0"
+}

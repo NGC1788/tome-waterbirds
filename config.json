@@ -1,0 +1,22 @@
+{
+  "seed": 0,
+  "teacher_epochs": 30,
+  "student_epochs": 100,
+  "batch_size": 32,
+  "accumulation_steps": 4,
+  "eval_batch_size": 64,
+  "workers": 4,
+  "lr": 0.00005,
+  "min_lr": 0.000001,
+  "warmup_epochs": 5,
+  "weight_decay": 0.05,
+  "drop_path": 0.1,
+  "label_smoothing": 0.0,
+  "kd_alpha": 0.5,
+  "temperature": 2.0,
+  "grad_clip": 1.0,
+  "merge_block": 2,
+  "merge_r": 98,
+  "amp": true,
+  "train_eval_every": 5
+}

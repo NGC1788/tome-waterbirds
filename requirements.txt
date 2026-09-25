@@ -1,0 +1,8 @@
+# Install a matching torch/torchvision build for the server's NVIDIA driver first.
+torch==2.8.0
+torchvision==0.23.0
+timm==1.0.20
+numpy>=1.26,<3
+Pillow>=10,<13
+matplotlib==3.10.6
+pytest==8.4.2
