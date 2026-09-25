@@ -89,6 +89,25 @@ python run.py train --data "$DATA" --out runs/tome_kd_seed0 --method tome_kd --s
 
 ## 최종 test 평가
 
+최종 test 전에, 완료된 seed 0 기준선은 **validation에서만** 병합 on/off를 비교한다.
+먼저 동일한 100 epoch checkpoint를 비교하고, 각 조건의 native validation-WGA로 선택한
+best checkpoint 결과를 보조적으로 확인한다. 두 조건에서 같은 checkpoint의 가중치는 고정한다.
+
+```bash
+git pull --ff-only
+OMP_NUM_THREADS=4 .venv/bin/python scripts/validate_merge.py \
+  --data data/waterbird_complete95_forest2water2 \
+  --runs runs --seed 0 --out runs/merge_probe_seed0
+```
+
+- KD 학습 / ToMe-KD 학습 × validation 병합 off / on의 2×2 비교다.
+- summary.csv는 정확도, WGA, 4개 그룹 정확도를 기록한다.
+- results.json과 prediction 파일은 같은 이미지의 정오답 전환 수와 KL(off || on, T=1)을 보존한다.
+- ToMe 학습 모델의 병합을 끄는 것 자체도 학습 때와 다른 조건이다. 회복 여부만으로
+  기울기 손실을 증명하거나, 두 종류의 손실을 정확하게 분해했다고 주장하지 않는다.
+- 아직 단일 seed이며, seed 1/2 반복과 기울기에 직접 개입하는 대조 실험은 별도 단계다.
+- 이 스크립트 추가는 기존 학습 코드와 checkpoint를 변경하지 않는다.
+
 학습과 설정 선택을 마친 뒤 실행한다. 학생은 같은 checkpoint로 병합 on/off 두 가지를 모두 평가한다.
 
 ```bash

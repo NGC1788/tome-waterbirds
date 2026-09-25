@@ -156,3 +156,57 @@ def test_training_resume_and_teacher_immutable(tmp_path,data_root,cfg,monkeypatc
     for key in a["model"]: torch.testing.assert_close(a["model"][key],b["model"][key],rtol=0,atol=0)
     assert run.sha(tpath)==before
     assert not list(Path(kd_args.out).glob("*test*"))
+
+
+def test_merge_probe_pairs_correctness_and_rejects_misaligned_samples():
+    from scripts.validate_merge import paired_stats
+    off = {"logits": torch.tensor([[3.,0.],[3.,0.],[0.,3.],[3.,0.]]),
+           "labels": torch.tensor([0,0,1,1]), "groups": torch.arange(4), "sample_ids": torch.arange(4)}
+    on = {**off, "logits": torch.tensor([[0.,3.],[3.,0.],[0.,3.],[0.,3.]])}
+    stats = paired_stats(off, on)
+    assert stats["all"]["prediction_flips"] == 2
+    assert stats["all"]["correct_off_wrong_on"] == 1
+    assert stats["all"]["wrong_off_correct_on"] == 1
+    assert stats["landbird_land"]["correct_off_wrong_on"] == 1
+    assert paired_stats(off, off)["all"]["kl_off_to_on_temperature1"] == 0
+    with pytest.raises(ValueError, match="Unpaired"):
+        paired_stats(off, {**on, "sample_ids": torch.arange(4).flip(0)})
+
+
+def test_merge_probe_uses_validation_and_preserves_checkpoints(tmp_path, data_root, cfg, monkeypatch):
+    from scripts import validate_merge as probe
+    info = audit(data_root, require_official=False)
+    monkeypatch.setattr(probe, "audit", lambda root: info)
+    monkeypatch.setattr(probe, "build", lambda role, cfg, pretrained: tiny())
+    used_splits = []
+    def validation_only(root, split):
+        used_splits.append(split)
+        return Waterbirds(root, split)
+    monkeypatch.setattr(probe, "Waterbirds", validation_only)
+    runs = tmp_path / "runs"
+    hashes = {}
+    for method in ("kd", "tome_kd"):
+        directory = runs / f"{method}_seed{cfg['seed']}"
+        directory.mkdir(parents=True)
+        spec = {"role": "student", "method": method, "config": cfg, "teacher_sha256": "fixture",
+                "metadata_sha256": info["metadata_sha256"], "images_sha256": info["images_sha256"],
+                "source_sha256": run.source_hash(),
+                "runtime_versions": {"torch": str(torch.__version__), "timm": run.timm.__version__}}
+        weights = tiny().state_dict()
+        for name, epoch in (("best.pt", 1), ("epoch_002.pt", 2)):
+            path = directory / name
+            run.save(path, {"model": weights, "spec": spec, "epoch": epoch, "train_weights": [.4,.2,.2,.2]})
+            hashes[path] = run.sha(path)
+        run.write_json(directory/"training_complete.json", {"epochs": 2})
+    out = tmp_path / "probe"
+    probe.main(["--data", str(data_root), "--runs", str(runs), "--out", str(out),
+                "--device", "cpu", "--epoch", "2"])
+    result = json.loads((out/"results.json").read_text())
+    assert used_splits == [1] and result["split"] == "validation"
+    assert len(result["records"]) == 4
+    assert [r["epoch"] for r in result["records"]] == [2,2,1,1]
+    assert all(run.sha(p) == digest for p, digest in hashes.items())
+    for p in out.glob("*predictions.pt"):
+        predictions = torch.load(p, weights_only=True)
+        assert predictions["merge_off"]["sample_ids"].tolist() == [5,6,7,8]
+        assert torch.equal(predictions["merge_off"]["sample_ids"], predictions["merge_on"]["sample_ids"])
