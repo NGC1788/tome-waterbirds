@@ -87,6 +87,22 @@ python run.py train --data "$DATA" --out runs/tome_kd_seed0 --method tome_kd --s
 같은 설정으로 seed 1, 2와 각각 다른 output 경로를 사용한다. 자동으로 모든 장시간 작업을 시작하지 않는다.
 중단 후 같은 명령에 `--resume`을 붙인다. 데이터/코드/설정이 바뀌면 기존 run 재개를 거부한다.
 
+seed 0의 CE/KD/ToMe-KD가 모두 완료된 뒤 Linux 서버에서 다음 명령을 실행하면
+seed 1, 2의 학생 6개를 순차 학습하고 각 seed의 validation 병합 on/off 평가까지 수행한다.
+Teacher는 기존 seed 0의 best.pt로 고정한다. 이는 **하나의 고정 Teacher에 대한 학생 seed 반복**이며,
+Teacher 재학습이나 다른 데이터 split까지 포함하는 반복은 아니다.
+
+```bash
+git pull --ff-only
+OMP_NUM_THREADS=4 nohup bash scripts/repeat_students.sh \
+  > runs/repeat_seed12.log 2>&1 < /dev/null &
+tail -f runs/repeat_seed12.log
+```
+
+실행 전 seed 0과 설정/학습 코드/torch/timm/Teacher가 일치하는지 확인한다.
+실패하면 후속 작업도 중단한다. 같은 스크립트 재실행 시 기존 run은 `--resume`으로 처리한다.
+`[ALL DONE]` 메시지가 모든 작업의 완료를 뜻한다. `Ctrl+C`는 tail 로그 보기만 종료한다.
+
 ## 최종 test 평가
 
 최종 test 전에, 완료된 seed 0 기준선은 **validation에서만** 병합 on/off를 비교한다.
