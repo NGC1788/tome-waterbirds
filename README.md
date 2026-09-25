@@ -154,6 +154,10 @@ test_results.json의 비율은 0~1이다. report의 *_percent 열은 0~100이다
 
 ## 구현 검증
 
+다음 단계의 학습 개입 실험은 [토큰별 기울기 차이 복원 pilot](experiments/README.md)에 정의했다.
+네 조건의 주 경로는 같은 ToMe를 사용하고, 추가 역전파 신호만 다르게 준다.
+기존 학습 코드와 checkpoint는 유지하며, 이 단계는 추가 계산을 쓰는 원인 검증용이다.
+
 ```bash
 python -m pytest tests -q
 ```
